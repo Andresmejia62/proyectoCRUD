@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="15.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.appregistros.proyectocrud.controller.ProductoController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+
+    <!-- ===== Formulario ===== -->
+    <Label style="-fx-font-size: 20px; -fx-font-weight: bold;" text="Gestión de productos" />
+
+    <GridPane hgap="12.0" vgap="10.0">
+        <columnConstraints>
+            <ColumnConstraints minWidth="80.0" />
+            <ColumnConstraints minWidth="220.0" prefWidth="260.0" />
+            <ColumnConstraints minWidth="80.0" />
+            <ColumnConstraints minWidth="220.0" prefWidth="260.0" />
+        </columnConstraints>
+
+        <Label text="Código:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="txtCodigo" promptText="Ej. P-001" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label text="Nombre:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <TextField fx:id="txtNombre" promptText="Nombre del producto" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+        <Label text="Precio:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextField fx:id="txtPrecio" promptText="0.00" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <Label text="Stock:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+        <TextField fx:id="txtStock" promptText="0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+        <Label text="Categoría:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <ComboBox fx:id="cmbCategoria" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <Label text="Marca:" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+        <ComboBox fx:id="cmbMarca" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+        <Label text="Fecha:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <DatePicker fx:id="dpFecha" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <Label text="Descripción:" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+        <TextField fx:id="txtDescripcion" promptText="Descripción opcional" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
+    </GridPane>
+
+    <HBox spacing="10.0">
+        <Button fx:id="btnNuevo" onAction="#onNuevo" text="Nuevo" />
+        <Button fx:id="btnGuardar" onAction="#onGuardar" text="Guardar" />
+        <Button fx:id="btnActualizar" onAction="#onActualizar" text="Actualizar" />
+        <Button fx:id="btnEliminar" onAction="#onEliminar" text="Eliminar" />
+    </HBox>
+
+    <!-- ===== Búsqueda y filtros ===== -->
+    <Label style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Búsqueda y filtros" />
+
+    <GridPane hgap="12.0" vgap="10.0">
+        <columnConstraints>
+            <ColumnConstraints minWidth="110.0" />
+            <ColumnConstraints minWidth="200.0" prefWidth="240.0" />
+            <ColumnConstraints minWidth="110.0" />
+            <ColumnConstraints minWidth="200.0" prefWidth="240.0" />
+        </columnConstraints>
+
+        <Label text="Código o nombre:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="txtBuscar" promptText="Buscar..." GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label text="Categoría:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+        <ComboBox fx:id="cmbFiltroCategoria" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+        <Label text="Desde:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <DatePicker fx:id="dpDesde" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <Label text="Hasta:" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+        <DatePicker fx:id="dpHasta" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+
+        <Label text="Precio mínimo:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <TextField fx:id="txtPrecioMin" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <Label text="Precio máximo:" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+        <TextField fx:id="txtPrecioMax" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+
+        <CheckBox fx:id="chkSoloConStock" text="Solo productos con existencias" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3" />
+        <Label text="Ordenar por:" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+        <ComboBox fx:id="cmbOrdenar" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="3" />
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
+    </GridPane>
+
+    <HBox spacing="10.0">
+        <Button fx:id="btnBuscar" onAction="#onBuscar" text="Buscar" />
+        <Button fx:id="btnLimpiar" onAction="#onLimpiarFiltros" text="Limpiar filtros" />
+    </HBox>
+
+    <!-- ===== Tabla ===== -->
+    <TableView fx:id="tblProductos" prefHeight="260.0" VBox.vgrow="ALWAYS">
+        <placeholder>
+            <Label text="Tabla sin contenido" />
+        </placeholder>
+        <columns>
+            <TableColumn fx:id="colCodigo" prefWidth="100.0" text="Código" />
+            <TableColumn fx:id="colNombre" prefWidth="170.0" text="Nombre" />
+            <TableColumn fx:id="colCategoria" prefWidth="130.0" text="Categoría" />
+            <TableColumn fx:id="colMarca" prefWidth="130.0" text="Marca" />
+            <TableColumn fx:id="colPrecio" prefWidth="90.0" text="Precio" />
+            <TableColumn fx:id="colStock" prefWidth="80.0" text="Stock" />
+            <TableColumn fx:id="colFecha" prefWidth="130.0" text="Fecha creación" />
+        </columns>
+    </TableView>
+</VBox>

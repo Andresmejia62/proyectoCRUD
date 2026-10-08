@@ -1,0 +1,92 @@
+create schema catalogos;
+
+create table catalogos.categorias (
+    id_categoria serial primary key,
+    nombre varchar(70) not null,
+    descripcion varchar(120) not null,
+    estado smallint not null default 1,
+
+    constraint chk_categoria check (estado in (0,1))
+);
+
+create table catalogos.marcas (
+    id_marca serial primary key,
+    nombre varchar(70) not null unique,
+    pais_origen varchar(50) not null,
+    estado smallint not null default 1
+	constraint chk_estado check (estado in (0,1))
+
+);
+
+insert into catalogos.marcas(nombre,pais_origen,estado) values ('Papa','mexico',1)
+insert into catalogos.marcas(nombre,pais_origen,estado) values ('Papa','mexico',3)
+insert into catalogos.marcas(nombre,pais_origen,estado) values ('papaya',2);
+insert into catalogos.marcas(nombre,pais_origen,estado) values ('papata','mexico',2);
+
+
+create table catalogos.productos (
+    id_producto serial primary key,
+    codigo varchar(50) not null,
+    nombre varchar(100) not null,
+    descripcion varchar(120) not null,
+    precio numeric(10,2) not null,
+    stock integer not null,
+	fecha_creacion date not null default current_date,
+    id_categoria integer not null,
+    id_marca integer not null,
+    estado smallint not null default 1,
+
+    constraint fk_id_categoria foreign key (id_categoria) references catalogos.categorias(id_categoria),
+    constraint fk_id_marca foreign key (id_marca) references catalogos.marcas(id_marca),
+	constraint chk_estadoProducto check (estado in (0,1)),
+	constraint chk_producto_precio check ( precio > 0),
+	constraint chk_producto_stock check ( stock > 0)
+
+
+
+);
+
+insert into catalogos.productos(codigo, nombre, descripcion, precio, stock, id_categoria, id_marca, estado)
+values ('001', 'papaya', 'papaya ', 10.50, 2, 2, 1, 0);
+
+insert into catalogos.productos(codigo, nombre, descripcion, precio, stock, id_categoria, id_marca, estado)
+values ('002','papa','patata',2.50, 80, 1,2,0)
+
+insert into catalogos.productos(codigo, nombre, descripcion, precio, stock, id_categoria, id_marca, estado)
+values ('003','banano',1.20,10,1,1,1)
+
+--5 inserts para cada tabla
+
+-- categorias
+insert into catalogos.categorias(nombre, descripcion, estado) values ('Frutas', 'Frutas frescas', 1);
+insert into catalogos.categorias(nombre, descripcion, estado) values ('Verduras', 'Verduras', 1);
+insert into catalogos.categorias(nombre, descripcion, estado) values ('Lácteos', 'Leche, queso y derivados', 1);
+insert into catalogos.categorias(nombre, descripcion, estado) values ('Bebidas', 'Jugos, refrescos y agua', 1);
+insert into catalogos.categorias(nombre, descripcion, estado) values ('Granos', 'Arroz, frijoles y cereales', 0);
+
+-- marcas
+insert into catalogos.marcas(nombre, pais_origen, estado) values ('Del Campo', 'Nicaragua', 1);
+insert into catalogos.marcas(nombre, pais_origen, estado) values ('Dos Pinos', 'Costa Rica', 1);
+insert into catalogos.marcas(nombre, pais_origen, estado) values ('Sabemas', 'Nicaragua', 1);
+insert into catalogos.marcas(nombre, pais_origen, estado) values ('Bimbo', 'Mexico', 1);
+insert into catalogos.marcas(nombre, pais_origen, estado) values ('Nestlé', 'Suiza', 0);
+
+-- productos
+
+insert into catalogos.productos(codigo, nombre, descripcion, precio, stock, id_categoria, id_marca, estado)
+values
+('P-001', 'Papaya', 'Papaya fresca por libra', 25.50, 40,
+    (select id_categoria from catalogos.categorias where nombre = 'Frutas'),
+    (select id_marca from catalogos.marcas where nombre = 'Del Campo'), 1),
+('P-002', 'Tomate', 'Tomate rojo por libra', 18.00, 60,
+    (select id_categoria from catalogos.categorias where nombre = 'Verduras'),
+    (select id_marca from catalogos.marcas where nombre = 'Del Campo'), 1),
+('P-003', 'Leche entera', 'Leche entera 1 litro', 35.75, 25,
+    (select id_categoria from catalogos.categorias where nombre = 'Lácteos'),
+    (select id_marca from catalogos.marcas where nombre = 'Dos Pinos'), 1),
+('P-004', 'Jugo de naranja', 'Jugo natural 500 ml', 22.00, 15,
+    (select id_categoria from catalogos.categorias where nombre = 'Bebidas'),
+    (select id_marca from catalogos.marcas where nombre = 'Sabemas'), 1),
+('P-005', 'Arroz', 'Arroz blanco bolsa de 5 libras', 90.00, 10,
+    (select id_categoria from catalogos.categorias where nombre = 'Granos'),
+    (select id_marca from catalogos.marcas where nombre = 'Bimbo'), 0);
