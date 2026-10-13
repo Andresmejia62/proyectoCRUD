@@ -16,7 +16,6 @@ import java.sql.Statement;
 
 public class ProductoController {
 
-    // ===== Formulario =====
     @FXML
     private TextField txtCodigo;
     @FXML
@@ -43,7 +42,6 @@ public class ProductoController {
     @FXML
     private Button btnEliminar;
 
-    // Filtros
     @FXML
     private TextField txtBuscar;
     @FXML
@@ -65,7 +63,6 @@ public class ProductoController {
     @FXML
     private Button btnLimpiar;
 
-    //  Tabla
     @FXML
     private TableView<Producto> tblProductos;
     @FXML
@@ -95,21 +92,42 @@ public class ProductoController {
         colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
         colFecha.setCellValueFactory(new PropertyValueFactory<>("fechaCreacion"));
 
-        tablaProductos.setItems(productos);
+        tblProductos.setItems(productos);
 
         cmbOrdenar.setItems(FXCollections.observableArrayList(
                 "Nombre", "Precio", "Stock", "Fecha de creación"));
 
         cargarCombos();
+        CargarProductos();
 
-        tablaProductos.getSelectionModel().selectedItemProperty().addListener(
+        tblProductos.getSelectionModel().selectedItemProperty().addListener(
                 (obs, anterior, seleccionado) -> {
                     if (seleccionado != null) mostrarEnFormulario(seleccionado);
                 });
     }
 
     private void cargarCombos() {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            cargarCombo(connection, "SELECT nombre FROM catalogos.categorias WHERE estado = 1 ORDER BY nombre", cmbCategoria);
+            cargarCombo(connection, "SELECT nombre FROM catalogos.marcas WHERE estado = 1 ORDER BY nombre", cmbMarca);
+            cargarCombo(connection, "SELECT nombre FROM catalogos.categorias WHERE estado = 1 ORDER BY nombre", cmbFiltroCategoria);
+        } catch (SQLException ex) {
+            System.out.println("error al cargar combos: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
+    private void cargarCombo(Connection connection, String sql, ComboBox<String> comboBox) {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            comboBox.getItems().clear();
+            while (resultSet.next()) {
+                comboBox.getItems().add(resultSet.getString(1));
+            }
+        } catch (SQLException ex) {
+            System.out.println("error al consultar combo: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     private void mostrarEnFormulario(Producto p) {
@@ -122,11 +140,10 @@ public class ProductoController {
         dpFecha.setValue(p.getFechaCreacion());
     }
 
-    //  Acciones del formulario
     @FXML
     private void onNuevo() {
         limpiarFormulario();
-        tablaProductos.getSelectionModel().clearSelection();
+        tblProductos.getSelectionModel().clearSelection();
     }
 
     @FXML
@@ -139,7 +156,7 @@ public class ProductoController {
 
     @FXML
     private void onActualizar() {
-        if (tablaProductos.getSelectionModel().getSelectedItem() == null) {
+        if (tblProductos.getSelectionModel().getSelectedItem() == null) {
             mostrarAlerta(Alert.AlertType.WARNING, "Selecciona un producto de la tabla.");
             return;
         }
@@ -149,7 +166,7 @@ public class ProductoController {
 
     @FXML
     private void onEliminar() {
-        Producto seleccionado = tablaProductos.getSelectionModel().getSelectedItem();
+        Producto seleccionado = tblProductos.getSelectionModel().getSelectedItem();
         if (seleccionado == null) {
             mostrarAlerta(Alert.AlertType.WARNING, "Selecciona un producto de la tabla.");
             return;
@@ -161,7 +178,7 @@ public class ProductoController {
     //  Acciones de filtros
     @FXML
     private void onBuscar() {
-
+        CargarProductos();
     }
 
     @FXML
@@ -220,25 +237,32 @@ public class ProductoController {
         alerta.showAndWait();
     }
 
-    private void CargarProductos(){
+    private void CargarProductos() {
         System.out.println("CargarProductos invoked");
         productos.clear();
 
-        String sql = "SELECT * FROM producto ";
+        String sql = "SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.precio, p.stock, p.fecha_creacion, " +
+               "c.nombre AS categoria, m.nombre AS marca " +
+               "FROM catalogos.productos p " +
+               "INNER JOIN catalogos.categorias c ON p.id_categoria = c.id_categoria " +
+               "INNER JOIN catalogos.marcas m ON p.id_marca = m.id_marca " +
+               "WHERE p.estado = 1 " +
+               "ORDER BY p.id_producto";
 
         try (Connection connection = DatabaseConnection.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String Titulo = resultSet.getString("titulo");
-                String Autor = resultSet.getString("autor");
-                String categoria = resultSet.getString("categoria");
-                Double Precio = resultSet.getDouble("Precio");
-                int Stock = resultSet.getInt("stock");
-                Producto producto = new Producto();
-                productos.add(producto);
-
+               int id = resultSet.getInt("id_producto");
+               String codigo = resultSet.getString("codigo");
+               String nombre = resultSet.getString("nombre");
+               String categoria = resultSet.getString("categoria");
+               String marca = resultSet.getString("marca");
+               Double precio = resultSet.getDouble("precio");
+               int stock = resultSet.getInt("stock");
+               java.time.LocalDate fechaCreacion = resultSet.getDate("fecha_creacion").toLocalDate();
+               Producto producto = new Producto(id, codigo, resultSet.getString("descripcion"), nombre, precio, stock, fechaCreacion, 0, categoria, 0, marca, 1);
+               productos.add(producto);
             }
 
             tblProductos.setItems(productos);
@@ -248,4 +272,8 @@ public class ProductoController {
             ex.printStackTrace();
         }
     }
+
+    private void ActualizarTabla() {
+        tblProductos.refresh();
     }
+}
