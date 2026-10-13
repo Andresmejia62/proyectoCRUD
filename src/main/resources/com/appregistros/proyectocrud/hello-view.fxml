@@ -52,7 +52,6 @@
         <Button fx:id="btnGuardar" onAction="#onGuardar" text="Guardar" />
         <Button fx:id="btnActualizar" onAction="#onActualizar" text="Actualizar" />
         <Button fx:id="btnEliminar" onAction="#onEliminar" text="Eliminar" />
-      <Button fx:id="btnEliminar1" layoutX="230.0" layoutY="10.0" onAction="#ActualizarTabla" text="Actualizar tabla" />
     </HBox>
 
     <!-- ===== Búsqueda y filtros ===== -->

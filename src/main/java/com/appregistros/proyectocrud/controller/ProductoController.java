@@ -9,10 +9,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import com.appregistros.proyectocrud.model.Producto;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class ProductoController {
 
@@ -149,9 +146,40 @@ public class ProductoController {
     @FXML
     private void onGuardar() {
         if (!validarFormulario()) return;
-        mostrarAlerta(Alert.AlertType.INFORMATION, "Producto guardado.");
-        onBuscar();
-        limpiarFormulario();
+
+        if (dpFecha.getValue() == null) {
+            mostrarAlerta(Alert.AlertType.WARNING, "La fecha es obligatoria.");
+            return;
+        }
+
+        String sql = "INSERT INTO catalogos.productos (codigo, nombre, descripcion, precio, stock, fecha_creacion, id_categoria, id_marca, estado) " +
+                "VALUES (?, ?, ?, ?, ?, ?, (SELECT id_categoria FROM catalogos.categorias WHERE nombre = ?), (SELECT id_marca FROM catalogos.marcas WHERE nombre = ?), 1)";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, txtCodigo.getText().trim());
+            statement.setString(2, txtNombre.getText().trim());
+            statement.setString(3, txtDescripcion.getText().trim());
+            statement.setDouble(4, Double.parseDouble(txtPrecio.getText().trim()));
+            statement.setInt(5, Integer.parseInt(txtStock.getText().trim()));
+            statement.setDate(6, Date.valueOf(dpFecha.getValue()));
+            statement.setString(7, cmbCategoria.getValue());
+            statement.setString(8, cmbMarca.getValue());
+
+            int filasAfectadas = statement.executeUpdate();
+            if (filasAfectadas > 0) {
+                mostrarAlerta(Alert.AlertType.INFORMATION, "Producto guardado.");
+                onBuscar();
+                limpiarFormulario();
+            } else {
+                mostrarAlerta(Alert.AlertType.ERROR, "No se pudo guardar el producto.");
+            }
+        } catch (SQLException ex) {
+            System.out.println("error al guardar producto: " + ex.getMessage());
+            ex.printStackTrace();
+            mostrarAlerta(Alert.AlertType.ERROR, "No se pudo guardar el producto. Revisa los datos e intenta nuevamente.");
+        }
     }
 
     @FXML
@@ -273,7 +301,4 @@ public class ProductoController {
         }
     }
 
-    private void ActualizarTabla() {
-        tblProductos.refresh();
-    }
 }
