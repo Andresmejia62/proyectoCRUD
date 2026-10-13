@@ -52,6 +52,7 @@
         <Button fx:id="btnGuardar" onAction="#onGuardar" text="Guardar" />
         <Button fx:id="btnActualizar" onAction="#onActualizar" text="Actualizar" />
         <Button fx:id="btnEliminar" onAction="#onEliminar" text="Eliminar" />
+      <Button fx:id="btnEliminar1" layoutX="226.0" layoutY="10.0" onAction="#ActualizarTabla" text="Actualizar Tabla" />
     </HBox>
 
     <!-- ===== Búsqueda y filtros ===== -->
@@ -92,7 +93,7 @@
     </GridPane>
 
     <HBox spacing="10.0">
-        <Button fx:id="btnBuscar" onAction="#onBuscar" text="Buscar" />
+        <Button fx:id="btnBuscar" onAction="#buscarProductos" text="Buscar" />
         <Button fx:id="btnLimpiar" onAction="#onLimpiarFiltros" text="Limpiar filtros" />
     </HBox>
 

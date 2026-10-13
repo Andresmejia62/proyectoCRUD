@@ -9,7 +9,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import com.appregistros.proyectocrud.model.Producto;
 
+import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductoController {
 
@@ -170,7 +174,6 @@ public class ProductoController {
             int filasAfectadas = statement.executeUpdate();
             if (filasAfectadas > 0) {
                 mostrarAlerta(Alert.AlertType.INFORMATION, "Producto guardado.");
-                onBuscar();
                 limpiarFormulario();
             } else {
                 mostrarAlerta(Alert.AlertType.ERROR, "No se pudo guardar el producto.");
@@ -189,7 +192,6 @@ public class ProductoController {
             return;
         }
         if (!validarFormulario()) return;
-        onBuscar();
     }
 
     @FXML
@@ -199,15 +201,11 @@ public class ProductoController {
             mostrarAlerta(Alert.AlertType.WARNING, "Selecciona un producto de la tabla.");
             return;
         }
-        onBuscar();
         limpiarFormulario();
     }
 
     //  Acciones de filtros
-    @FXML
-    private void onBuscar() {
-        CargarProductos();
-    }
+
 
     @FXML
     private void onLimpiarFiltros() {
@@ -219,7 +217,6 @@ public class ProductoController {
         txtPrecioMax.clear();
         chkSoloConStock.setSelected(false);
         cmbOrdenar.setValue(null);
-        onBuscar();
     }
 
     // Utilidades
@@ -301,4 +298,328 @@ public class ProductoController {
         }
     }
 
+/* Este método está diseñado únicamente para cargar todos los datos del resultset utilizado */
+
+    private Producto crearProductoDesdeResultSet(
+            ResultSet rs
+    ) throws SQLException {
+
+        return new Producto(
+
+                rs.getInt(
+                        "id_producto"
+                ),
+
+                rs.getString(
+                        "codigo"
+                ),
+
+                rs.getString(
+                        "descripcion"
+                ),
+
+                rs.getString(
+                        "nombre"
+                ),
+
+                rs.getDouble(
+                        "precio"
+                ),
+
+                rs.getInt(
+                        "stock"
+                ),
+
+                rs.getDate(
+                        "fecha_creacion"
+                ).toLocalDate(),
+
+                rs.getInt(
+                        "id_categoria"
+                ),
+
+                rs.getString(
+                        "categoria"
+                ),
+
+                rs.getInt(
+                        "id_marca"
+                ),
+
+                rs.getString(
+                        "marca"
+                ),
+
+                rs.getInt(
+                        "estado"
+                )
+        );
+    }
+    /* Buscar Productos */
+
+
+    @FXML
+    private void buscarProductos() {
+
+        productos.clear();
+
+        /*
+         * La consulta inicia con los INNER JOIN necesarios
+         * y con una condición permanente:
+         *
+         * p.estado = 1
+         *
+         * De esta forma nunca mostramos productos
+         * eliminados lógicamente.
+         */
+        StringBuilder sql = new StringBuilder("""
+                SELECT
+                    p.id_producto,
+                    p.codigo,
+                    p.nombre,
+                    p.descripcion,
+                    p.precio,
+                    p.stock,
+                    p.fecha_creacion,
+                    c.id_categoria,
+                    c.nombre AS categoria,
+                    m.id_marca,
+                    m.nombre AS marca,
+                    p.estado
+                FROM catalogos.productos p
+                INNER JOIN catalogos.categorias c
+                    ON p.id_categoria = c.id_categoria
+                INNER JOIN catalogos.marcas m
+                    ON p.id_marca = m.id_marca
+                WHERE p.estado = 1
+                """);
+        /*
+         * Aquí almacenaremos los valores que posteriormente
+         * serán enviados al PreparedStatement.
+         */
+        List<Object> parametros =
+                new ArrayList<>();
+
+        // Filtro por código o por nombre
+        String texto =
+                txtBuscar.getText().trim();
+
+        if (!texto.isBlank()) {
+
+            /*
+             * OR permite que el texto coincida con código
+             * o nombre.
+             *
+             * ILIKE permite búsquedas parciales sin importar
+             * mayúsculas y minúsculas.
+             */
+            sql.append("""            
+                    AND (
+                        p.codigo ILIKE ?
+                        OR p.nombre ILIKE ?
+                    )
+                    """);
+
+            parametros.add(
+                    "%" + texto + "%"
+            );
+
+            parametros.add(
+                    "%" + texto + "%"
+            );
+        }
+
+        // Filtro por fecha desde
+        LocalDate fechaDesde =
+                dpDesde.getValue();
+
+        if (fechaDesde != null) {
+            sql.append("""
+                    AND p.fecha_creacion >= ?
+                    """);
+            parametros.add(fechaDesde);
+        }
+
+        // Filtro por fechahasta
+        LocalDate fechaHasta =
+                dpHasta.getValue();
+
+        if (fechaHasta != null) {
+
+            sql.append("""
+                    
+                    AND p.fecha_creacion <= ?
+                    """);
+
+            parametros.add(fechaHasta);
+        }
+
+        /*
+         * Verificamos que las fechas tengan sentido.
+         *
+         * "Desde" no debería ser posterior a "Hasta".
+         */
+        if (
+                fechaDesde != null
+                        &&
+                        fechaHasta != null
+                        &&
+                        fechaDesde.isAfter(fechaHasta)
+        ) {
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Rango de fechas incorrecto"
+            );
+
+            return;
+        }
+
+        // Aplicación del ORDER BY
+
+        /*
+         * ORDER BY no utiliza un parámetro ? para nombres
+         * de columnas.
+         *
+         * Por esta razón utilizamos solamente opciones
+         * previamente definidas en el ComboBox.
+         *
+         * Esto funciona como una whitelist.
+         */
+        String orden =
+                cmbOrdenar.getValue();
+
+        if (orden == null) {
+            orden = "Nombre";
+        }
+
+        switch (orden) {
+
+            case "Precio menor a mayor" ->
+                    sql.append("""
+                            
+                            ORDER BY p.precio ASC
+                            """);
+
+            case "Precio mayor a menor" ->
+                    sql.append("""
+                            
+                            ORDER BY p.precio DESC
+                            """);
+
+            case "Fecha más reciente" ->
+                    sql.append("""
+                            
+                            ORDER BY p.fecha_creacion DESC
+                            """);
+
+            case "Fecha más antigua" ->
+                    sql.append("""
+                            
+                            ORDER BY p.fecha_creacion ASC
+                            """);
+
+            case "Stock mayor a menor" ->
+                    sql.append("""
+                            
+                            ORDER BY p.stock DESC
+                            """);
+
+            case "Stock menor a mayor" ->
+                    sql.append("""
+                            
+                            ORDER BY p.stock ASC
+                            """);
+
+            default ->
+                    sql.append("""
+                            
+                            ORDER BY p.nombre ASC
+                            """);
+        }
+
+        //Ejecución de la consulta
+
+        try (
+                Connection conexion =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(
+                                sql.toString()
+                        )
+        ) {
+
+            /*
+             * Recorremos la lista de parámetros para
+             * asignarlos dinámicamente al PreparedStatement.
+             */
+            for (
+                    int i = 0;
+                    i < parametros.size();
+                    i++
+            ) {
+                Object valor =
+                        parametros.get(i);
+
+                if (valor instanceof LocalDate fecha) {
+
+                    ps.setDate(
+                            i + 1,
+                            Date.valueOf(fecha)
+                    );
+
+                } else if (valor instanceof BigDecimal numero) {
+
+                    ps.setBigDecimal(
+                            i + 1,
+                            numero
+                    );
+
+                } else {
+                    ps.setObject(
+                            i + 1,
+                            valor
+                    );
+                }
+            }
+
+            try (
+                    ResultSet rs =
+                            ps.executeQuery()
+            ) {
+
+                while (rs.next()) {
+
+                    productos.add(
+                            crearProductoDesdeResultSet(rs)
+                    );
+                }
+            }
+
+            tblProductos.setItems(
+                    productos
+            );
+
+            /*
+             * Podemos informar al estudiante/usuario cuando
+             * ningún registro satisface las condiciones.
+             */
+            if (productos.isEmpty()) {
+                mostrarAlerta(
+                        Alert.AlertType.INFORMATION,
+                        "Sin resultados"
+                );
+            }
+        } catch (SQLException e) {
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "No se pudo realizar la búsqueda."
+            );
+        }
+    }
+    @FXML
+    private void ActualizarTabla() {
+        CargarProductos();
+    }
 }
